@@ -447,21 +447,22 @@ spec:
             echo "CONTENT_IMAGE_FROM_CI: $CONTENT_IMAGE_FROM_CI"
             echo "OPENSCAP_IMAGE_FROM_CI: $OPENSCAP_IMAGE_FROM_CI"
             echo "---"
-            ls cd /var/workdir/source
-            exit 0
 
-            # Setup the ephemeral cluster kubeconfig
-            KUBECONFIG="$(mktemp --tmpdir=/tmp kubeconfig.XXXXX)"
-            trap 'rm -f "$KUBECONFIG"' EXIT
+            # # Setup the ephemeral cluster kubeconfig
+            # KUBECONFIG="$(mktemp --tmpdir=/tmp kubeconfig.XXXXX)"
+            # trap 'rm -f "$KUBECONFIG"' EXIT
 
-            echo "$KUBECONFIG_VALUE" >"$KUBECONFIG"
-            export KUBECONFIG
+            # echo "$KUBECONFIG_VALUE" >"$KUBECONFIG"
+            # export KUBECONFIG
 
             # Download oc and make it available
             curl -LO 'https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.17.36/openshift-client-linux-amd64-rhel9.tar.gz'
             oc_bins="$(mktemp --tmpdir=/tmp -d oc-bins.XXXXX)"
             tar -xzf openshift-client-linux-amd64-rhel9.tar.gz -C "$oc_bins"
             export PATH="${oc_bins}:$PATH"
+
+            ls -l /var/workdir
+            chmod -R 777 /var/workdir/source
 
             # Run the test
             cd /var/workdir/source
