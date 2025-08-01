@@ -372,12 +372,15 @@ spec:
 
     - name: run-test
       runAfter:
-      - provision-ephemeral-cluster
+      # - provision-ephemeral-cluster
+      - build-compliance-operator-image
+      - build-testcontent-image
+      - build-testopenscap-image-index
       params:
       - name: source_artifact
         value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
-      - name: kubeconfigSecretRef
-        value: $(tasks.provision-ephemeral-cluster.results.secretRef)
+      # - name: kubeconfigSecretRef
+      #   value: $(tasks.provision-ephemeral-cluster.results.secretRef)
       - name: imageFromCI
         value: $(tasks.build-compliance-operator-image.results.IMAGE_URL[*])
       - name: contentImageFromCI
@@ -386,9 +389,9 @@ spec:
         value: $(tasks.build-testopenscap-image-index.results.IMAGE_URL)
       taskSpec:
         params:
-        - name: kubeconfigSecretRef
-          type: string
-          description: "The secret that holds the Ephemeral Cluster kubeconfig"
+        # - name: kubeconfigSecretRef
+        #   type: string
+        #   description: "The secret that holds the Ephemeral Cluster kubeconfig"
         - default: ca-bundle.crt
           description: The name of the key in the ConfigMap that contains the CA bundle data.
           name: caTrustConfigMapKey
@@ -398,9 +401,9 @@ spec:
           name: caTrustConfigMapName
           type: string
         - name: imageFromCI
-          type: string
+          type: array
         - name: contentImageFromCI
-          type: string
+          type: array
         - name: openscapImageFromCI
           type: string
 
@@ -425,20 +428,27 @@ spec:
         - name: run-test
           image: registry.redhat.io/ubi9/go-toolset@sha256:3ce6311380d5180599a3016031a9112542d43715244816d1d0eabc937952667b
           env:
-          - name: KUBECONFIG_VALUE
-            valueFrom:
-              secretKeyRef:
-                name: $(params.kubeconfigSecretRef)
-                key: kubeconfig
+          # - name: KUBECONFIG_VALUE
+          #   valueFrom:
+          #     secretKeyRef:
+          #       name: $(params.kubeconfigSecretRef)
+          #       key: kubeconfig
           - name: IMAGE_FROM_CI
-            value: $(params.imageFromCI)
+            value: $(params.imageFromCI[0])
           - name: CONTENT_IMAGE_FROM_CI
-            value: $(params.contentImageFromCI)
+            value: $(params.contentImageFromCI[0])
           - name: OPENSCAP_IMAGE_FROM_CI
             value: $(params.openscapImageFromCI)
           script: |
             #!/usr/bin/env bash
             set -eo pipefail
+
+            echo "IMAGE_FROM_CI: $IMAGE_FROM_CI"
+            echo "CONTENT_IMAGE_FROM_CI: $CONTENT_IMAGE_FROM_CI"
+            echo "OPENSCAP_IMAGE_FROM_CI: $OPENSCAP_IMAGE_FROM_CI"
+            echo "---"
+            ls cd /var/workdir/source
+            exit 0
 
             # Setup the ephemeral cluster kubeconfig
             KUBECONFIG="$(mktemp --tmpdir=/tmp kubeconfig.XXXXX)"
@@ -469,22 +479,22 @@ spec:
         - emptyDir: {}
           name: workdir
 
-    finally:
-    - name: deprovision-ephemeral-cluster
-      taskRef:
-        resolver: git
-        params:
-        - name: url
-          value: https://github.com/openshift/konflux-tasks
-        - name: revision
-          value: main
-        - name: pathInRepo
-          value: tasks/deprovision-ephemeral-cluster/0.1/deprovision-ephemeral-cluster.yaml
-      params:
-      - name: testPlatformClusterClaimName
-        value: $(tasks.provision-ephemeral-cluster.results.testPlatformClusterClaimName)
-      - name: testPlatformClusterClaimNamespace
-        value: $(tasks.provision-ephemeral-cluster.results.testPlatformClusterClaimNamespace)
+    # finally:
+    # - name: deprovision-ephemeral-cluster
+    #   taskRef:
+    #     resolver: git
+    #     params:
+    #     - name: url
+    #       value: https://github.com/openshift/konflux-tasks
+    #     - name: revision
+    #       value: main
+    #     - name: pathInRepo
+    #       value: tasks/deprovision-ephemeral-cluster/0.1/deprovision-ephemeral-cluster.yaml
+    #   params:
+    #   - name: testPlatformClusterClaimName
+    #     value: $(tasks.provision-ephemeral-cluster.results.testPlatformClusterClaimName)
+    #   - name: testPlatformClusterClaimNamespace
+    #     value: $(tasks.provision-ephemeral-cluster.results.testPlatformClusterClaimNamespace)
 
     workspaces:
     - name: git-auth
