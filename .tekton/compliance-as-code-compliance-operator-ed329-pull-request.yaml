@@ -500,4 +500,6 @@ spec:
     secret:
       secretName: '{{ git_auth_secret }}'
 
+  timeout: 6h
+
 status: {}
