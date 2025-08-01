@@ -461,11 +461,11 @@ spec:
             tar -xzf openshift-client-linux-amd64-rhel9.tar.gz -C "$oc_bins"
             export PATH="${oc_bins}:$PATH"
 
-            ls -l /var/workdir
-            chmod -R 777 /var/workdir/source
+            ls -l /tmp
+            cp -R /var/workdir/source/ /tmp/
 
             # Run the test
-            cd /var/workdir/source
+            cd /tmp/source
             make e2e-serial
           workingDir: /var/workdir
 
