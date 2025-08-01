@@ -344,31 +344,31 @@ spec:
           value: task
         resolver: bundles
 
-    - name: provision-ephemeral-cluster
-      params:
-      - name: workflow
-        value: ipi-aws
-      - name: clusterProfile
-        value: aws-3
-      - name: releases
-        value: '{"initial":{"integration":{"name":"4.17","namespace":"ocp"}},"latest":{"integration":{"include_built_images":true,"name":"4.17","namespace":"ocp"}}}'
-      - name: ownerName
-        value: $(context.pipelineRun.name)
-      - name: ownerUid
-        value: $(context.pipelineRun.uid)
-      runAfter:
-      - build-compliance-operator-image
-      - build-testcontent-image
-      - build-testopenscap-image-index
-      taskRef:
-        resolver: git
-        params:
-        - name: url
-          value: https://github.com/danilo-gemoli/openshift-konflux-tasks
-        - name: revision
-          value: fix/provision-ephemeral-cluster
-        - name: pathInRepo
-          value: tasks/provision-ephemeral-cluster/0.1/provision-ephemeral-cluster.yaml
+    # - name: provision-ephemeral-cluster
+    #   params:
+    #   - name: workflow
+    #     value: ipi-aws
+    #   - name: clusterProfile
+    #     value: aws-3
+    #   - name: releases
+    #     value: '{"initial":{"integration":{"name":"4.17","namespace":"ocp"}},"latest":{"integration":{"include_built_images":true,"name":"4.17","namespace":"ocp"}}}'
+    #   - name: ownerName
+    #     value: $(context.pipelineRun.name)
+    #   - name: ownerUid
+    #     value: $(context.pipelineRun.uid)
+    #   runAfter:
+    #   - build-compliance-operator-image
+    #   - build-testcontent-image
+    #   - build-testopenscap-image-index
+    #   taskRef:
+    #     resolver: git
+    #     params:
+    #     - name: url
+    #       value: https://github.com/danilo-gemoli/openshift-konflux-tasks
+    #     - name: revision
+    #       value: fix/provision-ephemeral-cluster
+    #     - name: pathInRepo
+    #       value: tasks/provision-ephemeral-cluster/0.1/provision-ephemeral-cluster.yaml
 
     - name: run-test
       runAfter:
