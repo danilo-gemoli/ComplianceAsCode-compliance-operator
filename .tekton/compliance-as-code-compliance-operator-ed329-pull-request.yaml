@@ -344,54 +344,55 @@ spec:
           value: task
         resolver: bundles
 
-    # - name: provision-ephemeral-cluster
-    #   params:
-    #   - name: workflow
-    #     value: ipi-aws
-    #   - name: clusterProfile
-    #     value: aws-3
-    #   - name: releases
-    #     value: '{"initial":{"integration":{"name":"4.17","namespace":"ocp"}},"latest":{"integration":{"include_built_images":true,"name":"4.17","namespace":"ocp"}}}'
-    #   - name: ownerName
-    #     value: $(context.pipelineRun.name)
-    #   - name: ownerUid
-    #     value: $(context.pipelineRun.uid)
-    #   runAfter:
-    #   - build-compliance-operator-image
-    #   - build-testcontent-image
-    #   - build-testopenscap-image-index
-    #   taskRef:
-    #     resolver: git
-    #     params:
-    #     - name: url
-    #       value: https://github.com/danilo-gemoli/openshift-konflux-tasks
-    #     - name: revision
-    #       value: fix/provision-ephemeral-cluster
-    #     - name: pathInRepo
-    #       value: tasks/provision-ephemeral-cluster/0.1/provision-ephemeral-cluster.yaml
-
-    - name: run-test
+    - name: provision-ephemeral-cluster
+      params:
+      - name: workflow
+        value: ipi-aws
+      - name: clusterProfile
+        value: aws-3
+      - name: releases
+        value: '{"initial":{"integration":{"name":"4.17","namespace":"ocp"}},"latest":{"integration":{"include_built_images":true,"name":"4.17","namespace":"ocp"}}}'
+      - name: ownerName
+        value: $(context.pipelineRun.name)
+      - name: ownerUid
+        value: $(context.pipelineRun.uid)
       runAfter:
-      # - provision-ephemeral-cluster
       - build-compliance-operator-image
       - build-testcontent-image
       - build-testopenscap-image-index
+      taskRef:
+        resolver: git
+        params:
+        - name: url
+          value: https://github.com/danilo-gemoli/openshift-konflux-tasks
+        - name: revision
+          value: fix/provision-ephemeral-cluster
+        - name: pathInRepo
+          value: tasks/provision-ephemeral-cluster/0.1/provision-ephemeral-cluster.yaml
+
+    - name: run-test
+      runAfter:
+      - provision-ephemeral-cluster
       params:
       - name: source_artifact
         value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
-      # - name: kubeconfigSecretRef
-      #   value: $(tasks.provision-ephemeral-cluster.results.secretRef)
+      - name: kubeconfigSecretRef
+        value: $(tasks.provision-ephemeral-cluster.results.secretRef)
       - name: imageFromCI
         value: $(tasks.build-compliance-operator-image.results.IMAGE_URL[*])
       - name: contentImageFromCI
         value: $(tasks.build-testcontent-image.results.IMAGE_URL[*])
       - name: openscapImageFromCI
         value: $(tasks.build-testopenscap-image-index.results.IMAGE_URL)
+      - name: git-url
+        value: $(params.git-url)
+      - name: revision
+        value: $(params.revision)
       taskSpec:
         params:
-        # - name: kubeconfigSecretRef
-        #   type: string
-        #   description: "The secret that holds the Ephemeral Cluster kubeconfig"
+        - name: kubeconfigSecretRef
+          type: string
+          description: "The secret that holds the Ephemeral Cluster kubeconfig"
         - default: ca-bundle.crt
           description: The name of the key in the ConfigMap that contains the CA bundle data.
           name: caTrustConfigMapKey
@@ -406,6 +407,10 @@ spec:
           type: array
         - name: openscapImageFromCI
           type: string
+        - name: git-url
+          type: string
+        - name: revision
+          type: string
 
         stepTemplate:
           volumeMounts:
@@ -413,32 +418,24 @@ spec:
             name: workdir
 
         steps:
-        - name: use-trusted-artifact
-          args:
-          - use
-          - $(params.source_artifact)=/var/workdir/source
-          computeResources: {}
-          image: quay.io/konflux-ci/build-trusted-artifacts:latest@sha256:4689f88dd253bd1feebf57f1a76a5a751880f739000719cd662bbdc76990a7fd
-          volumeMounts:
-          - mountPath: /etc/pki/tls/certs/ca-custom-bundle.crt
-            name: trusted-ca
-            readOnly: true
-            subPath: ca-bundle.crt
-
         - name: run-test
           image: registry.redhat.io/ubi9/go-toolset@sha256:3ce6311380d5180599a3016031a9112542d43715244816d1d0eabc937952667b
           env:
-          # - name: KUBECONFIG_VALUE
-          #   valueFrom:
-          #     secretKeyRef:
-          #       name: $(params.kubeconfigSecretRef)
-          #       key: kubeconfig
+          - name: KUBECONFIG_VALUE
+            valueFrom:
+              secretKeyRef:
+                name: $(params.kubeconfigSecretRef)
+                key: kubeconfig
           - name: IMAGE_FROM_CI
             value: $(params.imageFromCI[0])
           - name: CONTENT_IMAGE_FROM_CI
             value: $(params.contentImageFromCI[0])
           - name: OPENSCAP_IMAGE_FROM_CI
             value: $(params.openscapImageFromCI)
+          - name: REVISION
+            value: $(params.revision)
+          - name: GIT_URL
+            value: $(params.git-url)
           script: |
             #!/usr/bin/env bash
             set -eo pipefail
@@ -448,12 +445,12 @@ spec:
             echo "OPENSCAP_IMAGE_FROM_CI: $OPENSCAP_IMAGE_FROM_CI"
             echo "---"
 
-            # # Setup the ephemeral cluster kubeconfig
-            # KUBECONFIG="$(mktemp --tmpdir=/tmp kubeconfig.XXXXX)"
-            # trap 'rm -f "$KUBECONFIG"' EXIT
+            # Setup the ephemeral cluster kubeconfig
+            KUBECONFIG="$(mktemp --tmpdir=/tmp kubeconfig.XXXXX)"
+            trap 'rm -f "$KUBECONFIG"' EXIT
 
-            # echo "$KUBECONFIG_VALUE" >"$KUBECONFIG"
-            # export KUBECONFIG
+            echo "$KUBECONFIG_VALUE" >"$KUBECONFIG"
+            export KUBECONFIG
 
             # Download oc and make it available
             curl -LO 'https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.17.36/openshift-client-linux-amd64-rhel9.tar.gz'
@@ -461,11 +458,13 @@ spec:
             tar -xzf openshift-client-linux-amd64-rhel9.tar.gz -C "$oc_bins"
             export PATH="${oc_bins}:$PATH"
 
-            ls -l /tmp
-            cp -R /var/workdir/source/ /tmp/
+            # Clone the repository
+            git clone --depth=1 "$GIT_URL" /tmp/co
+            cd /tmp/co
+            git fetch origin --update-head-ok --force "$REVISION"
+            git checkout "$REVISION"
 
             # Run the test
-            cd /tmp/source
             make e2e-serial
           workingDir: /var/workdir
 
@@ -480,22 +479,22 @@ spec:
         - emptyDir: {}
           name: workdir
 
-    # finally:
-    # - name: deprovision-ephemeral-cluster
-    #   taskRef:
-    #     resolver: git
-    #     params:
-    #     - name: url
-    #       value: https://github.com/openshift/konflux-tasks
-    #     - name: revision
-    #       value: main
-    #     - name: pathInRepo
-    #       value: tasks/deprovision-ephemeral-cluster/0.1/deprovision-ephemeral-cluster.yaml
-    #   params:
-    #   - name: testPlatformClusterClaimName
-    #     value: $(tasks.provision-ephemeral-cluster.results.testPlatformClusterClaimName)
-    #   - name: testPlatformClusterClaimNamespace
-    #     value: $(tasks.provision-ephemeral-cluster.results.testPlatformClusterClaimNamespace)
+    finally:
+    - name: deprovision-ephemeral-cluster
+      taskRef:
+        resolver: git
+        params:
+        - name: url
+          value: https://github.com/openshift/konflux-tasks
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: tasks/deprovision-ephemeral-cluster/0.1/deprovision-ephemeral-cluster.yaml
+      params:
+      - name: testPlatformClusterClaimName
+        value: $(tasks.provision-ephemeral-cluster.results.testPlatformClusterClaimName)
+      - name: testPlatformClusterClaimNamespace
+        value: $(tasks.provision-ephemeral-cluster.results.testPlatformClusterClaimNamespace)
 
     workspaces:
     - name: git-auth
