@@ -510,6 +510,9 @@ spec:
     secret:
       secretName: '{{ git_auth_secret }}'
 
-  timeout: 6h
+  timeouts:
+    pipeline: 12h0m0s
+    tasks: 6h0m0s
+    finally: 6h0m0s
 
 status: {}
