@@ -42,10 +42,12 @@ spec:
           script: |
             #!/usr/bin/env bash
             echo "body:"
-            echo "{{ body }}"
+            python -c 'import json; import sys; json.dump(json.loads("""{{ body.pull_request }}"""), sys.stdout)'
+            echo ""
             echo "---"
+            echo ""
             echo "headers:"
-            echo "{{ headers }}"
+            python -c 'import json; import sys; json.dump(json.loads("""{{ headers }}"""), sys.stdout)'
 
     workspaces:
     - name: git-auth
