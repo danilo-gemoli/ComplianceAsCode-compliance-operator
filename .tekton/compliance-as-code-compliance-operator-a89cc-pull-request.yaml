@@ -14,9 +14,9 @@ metadata:
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: foobar
-    appstudio.openshift.io/component: compliance-as-code-compliance-operator-ed329
+    appstudio.openshift.io/component: compliance-as-code-compliance-operator-a89cc
     pipelines.appstudio.openshift.io/type: build
-  name: compliance-as-code-compliance-operator-ed329-on-pull-request
+  name: compliance-as-code-compliance-operator-a89cc-on-pull-request
   namespace: testplatform-ci-tenant
 
 spec:
@@ -37,13 +37,13 @@ spec:
   - name: hermetic
     value: "true"
   - name: output-image
-    value: quay.io/redhat-user-workloads-stage/testplatform-ci-tenant/compliance-as-code-compliance-operator-ed329:compliance-operator-on-pr-{{revision}}
+    value: quay.io/redhat-user-workloads-stage/testplatform-ci-tenant/compliance-as-code-compliance-operator-a89cc:compliance-operator-on-pr-{{revision}}
   - name: compliance-operator-image
-    value: quay.io/redhat-user-workloads-stage/testplatform-ci-tenant/compliance-as-code-compliance-operator-ed329:compliance-operator-on-pr-{{revision}}
+    value: quay.io/redhat-user-workloads-stage/testplatform-ci-tenant/compliance-as-code-compliance-operator-a89cc:compliance-operator-on-pr-{{revision}}
   - name: testcontent-image
-    value: quay.io/redhat-user-workloads-stage/testplatform-ci-tenant/compliance-as-code-compliance-operator-ed329:testcontent-on-pr-{{revision}}
+    value: quay.io/redhat-user-workloads-stage/testplatform-ci-tenant/compliance-as-code-compliance-operator-a89cc:testcontent-on-pr-{{revision}}
   - name: testopenscap-image
-    value: quay.io/redhat-user-workloads-stage/testplatform-ci-tenant/compliance-as-code-compliance-operator-ed329:testopenscap-on-pr-{{revision}}
+    value: quay.io/redhat-user-workloads-stage/testplatform-ci-tenant/compliance-as-code-compliance-operator-a89cc:testopenscap-on-pr-{{revision}}
 
   pipelineSpec:
     description: Run the AWS Serial e2e test
@@ -503,7 +503,7 @@ spec:
       optional: true
   
   taskRunTemplate:
-    serviceAccountName: build-pipeline-compliance-as-code-compliance-operator-ed329
+    serviceAccountName: build-pipeline-compliance-as-code-compliance-operator-a89cc
   
   workspaces:
   - name: git-auth
